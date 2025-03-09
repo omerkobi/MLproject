@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import kagglehub
 import numpy as np
 
+
 #with zipfile.ZipFile(r'C:\Users\OMER\Downloads\archive.zip') as zip_:
     #zip_.extractall()
 
@@ -152,13 +153,17 @@ print(tv.isna().sum())
 
 # date time
 tv['first_air_date'] = pd.to_datetime(tv['first_air_date'], errors='coerce')
-tv['last_air_date'] = pd.to_datetime(tv['first_air_date'], errors='coerce')
+tv['last_air_date'] = pd.to_datetime(tv['last_air_date'], errors='coerce')
 # Extract year and month
 tv['year_start'] = tv['first_air_date'].dt.year
 tv['month_start'] = tv['first_air_date'].dt.month
 
+
 tv['year_end'] = tv['last_air_date'].dt.year
 tv['month_end'] = tv['last_air_date'].dt.month
+
+#print(tv[['first_air_date','last_air_date']])
+
 #print(tv.info())
 
 print(tv.value_counts('genres').sort_values(ascending=False).head(15))
@@ -193,6 +198,18 @@ politict = ['Corruption', 'Betrayal', 'Revolution', 'Leadership', 'Secret'
 
 tv = tv.drop(columns='name')
 
-pd.to_pickle(tv,'tv_show')
+#print(tv[['year_end','year_start']])
 
-print('hello')
+
+
+tv.to_pickle('tv_show.pkl')
+
+
+
+
+#tv_= pd.read_pickle('tv_show.pkl')
+print('hi')
+print(tv_.info(),'hello')
+
+#import sys
+#print(sys.version)
