@@ -80,11 +80,8 @@ tv[['name','original_name']] = tv[['name','original_name']].astype(str)
 # Adding a column if the name of the show changed and removing the original_name column
 tv['changed_name'] = tv.apply(lambda x: False if x['name']==x['original_name'] else True, axis=1)
 tv = tv.drop(columns='original_name')
-print(tv.info())
-#print(tv['changed_name'].head(15))
-#value counts of country origin
-#print(tv.value_counts('origin_country').sort_values(ascending=False).head(20))
 
+print(tv.info())
 
 
 print(tv['origin_country'].nunique())
@@ -136,6 +133,7 @@ tv_for_cor = tv[cols]
 
 print(tv.value_counts('original_language').sort_values(ascending=False).head(20))
 # setting a columns for number of languges
+##################################################
 lst = ['languages','spoken_languages','production_countries']
 def languages(df,lst):
     for col in lst :
@@ -145,13 +143,13 @@ def languages(df,lst):
     df = df.drop(columns=lst)
     return df
 
-
+###############################
 tv = languages(tv,lst)
 print(tv.info())
 
 print(tv.isna().sum())
 
-# date time
+# date time : convert to numericals
 tv['first_air_date'] = pd.to_datetime(tv['first_air_date'], errors='coerce')
 tv['last_air_date'] = pd.to_datetime(tv['last_air_date'], errors='coerce')
 # Extract year and month
@@ -192,24 +190,24 @@ print(tv.value_counts('type').sort_values(ascending=False).head(20))
 
 tv['overview'] = tv['overview'].astype('string')
 print(tv.info())
-keywords = ['oldest','mission','crime','fight',]
-politict = ['Corruption', 'Betrayal', 'Revolution', 'Leadership', 'Secret'
-'Society', 'Dynasty', 'Election', 'Scandal', 'Power', 'Manipulation']
+
 
 tv = tv.drop(columns='name')
 
 #print(tv[['year_end','year_start']])
-
+sns.heatmap(tv.corr(numeric_only=True))
+plt.show()
 
 
 tv.to_pickle('tv_show.pkl')
 
+import sys
+print(sys.executable)
 
 
 
 #tv_= pd.read_pickle('tv_show.pkl')
-print('hi')
-print(tv_.info(),'hello')
+
 
 #import sys
 #print(sys.version)

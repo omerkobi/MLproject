@@ -15,6 +15,7 @@ numpy = "^2.2.3"
 ipykernel = "^6.29.5"
 scikit-learn = "^1.6.1"
 jupyter = "^1.1.1"
+missingno = "^0.5.2"
 
 
 [build-system]
