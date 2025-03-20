@@ -204,12 +204,28 @@ tv['production_countries'] = tv_cop['production_countries']
 
 # hundle networks column reduce the number of networks - convert sum to 'other'
 
+
 net_counts = tv.value_counts('networks').sort_values(ascending=False)
 net_counts_other = net_counts[net_counts >= 50].index.tolist()
-print(net_counts)
+
+def replace_low_count_networks(value):
+    if pd.isna(value):  # Handle NaN values
+        return value
+    
+    networks = value.split(', ')  # Split into list of networks
+    
+    # Check if at least one network is in net_counts_other
+    if any(net in net_counts_other for net in networks):
+        return value  # Keep original value if at least one network is valid
+    
+    # Otherwise, replace all with 'Other'
+    return 'Other'
+
+
+#print(net_counts)
 tv_cop['networks'] = tv_cop['networks'].astype('string')
-tv_cop['networks'] = tv_cop['networks'].apply(lambda x : 'other' if pd.notna(x) and x not in net_counts_other else x)
-#print(tv_cop.value_counts('networks').sort_values(ascending=False).head(20))
+tv_cop['networks'] = tv_cop['networks'].apply(replace_low_count_networks)
+print(tv_cop.value_counts('networks').sort_values(ascending=False).head(20))
 tv['networks'] = tv_cop['networks']
 
 print(tv.info())
