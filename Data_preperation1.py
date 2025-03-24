@@ -106,17 +106,14 @@ def languages(df,lst):
     df = df.drop(columns=lst)
     return df
 
-test = 'asddsa'
-n= test.split(",")
-print(n)
-t = test in n
-print(t)
+#################
 
 ###############################
 print('hello')
 print(tv.value_counts('production_countries').sort_values(ascending=False).head(25).values.sum())
 tv_for_features = languages(tv_for_features,lst)
 print(tv_for_features.head())
+######## SAVE FOR LATER ########
 pd.to_pickle(tv_for_features,'tv_for_features.pkl')
 
 print(tv.info())
@@ -133,6 +130,9 @@ tv['month_start'] = tv['first_air_date'].dt.month
 
 tv['year_end'] = tv['last_air_date'].dt.year
 tv['month_end'] = tv['last_air_date'].dt.month
+
+# Drop the original columns
+tv = tv.drop(columns=['first_air_date', 'last_air_date'])
 
 #print(tv[['first_air_date','last_air_date']])
 
@@ -156,13 +156,38 @@ def group_geners(genre):
 
 
 tv['group_genere'] = tv['genres'].apply(group_geners)
+top_20_gen = tv.value_counts('group_genere').sort_values(ascending=False).head(20)
+top_20_gen_other = top_20_gen.index.tolist()
+print(top_20_gen_other)
+top_20_gen = [gen.strip() for gen in top_20_gen_other]
+print(top_20_gen)
+def generes_to_other(value):
+    if pd.isna(value):
+        return value
+    genere = value.split('&')
+    genere = [gen.strip() for gen in genere]
+    if any(gen in top_20_gen_other for gen in genere):
+        if len(genere) > 1:
+            return 'multiple top_20'
+        else:
+            return value
+    return 'other'
+
+tv_cop = tv.copy()
+tv_cop['group_genere'] = tv_cop['group_genere'].astype('string')
+tv_cop['group_genere'] = tv_cop['group_genere'].apply(generes_to_other)
+print(tv_cop.value_counts('group_genere').sort_values(ascending=False).head(20))
+print(tv_cop['group_genere'].nunique())
+# Apply to the original DB:
+print(tv['group_genere'].nunique())
 
 ########### handle overviews column ##########
 tv['overview'] = tv['overview'].astype('string')
 tv['overview'] = tv['overview'].apply(lambda x :x.lower() if pd.notna(x) else x) 
 
 
-tv_cop = tv.copy()
+
+
 
 print(check_columns())
 geners_count = tv.value_counts('group_genere').sort_values(ascending=False)
@@ -226,7 +251,10 @@ def replace_low_count_networks(value):
     
     # Check if at least one network is in net_counts_other
     if any(net in net_counts_other for net in networks):
-        return value  # Keep original value if at least one network is valid
+        if len(networks) > 1:
+            return 'multiple top_20'
+        else:
+            return value  # Keep original value if at least one network is valid
     
     # Otherwise, replace all with 'Other'
     return 'Other'
@@ -254,17 +282,19 @@ def replace_with_dominant(value):
 tv_cop['networks'] = tv_cop['networks'].astype('string')
 tv_cop['networks'] = tv_cop['networks'].apply(replace_low_count_networks)
 #apllying
-tv_cop['_networks_'] = tv_cop['networks'].apply(replace_with_dominant)
+#tv_cop['_networks_'] = tv_cop['networks'].apply(replace_with_dominant)
+
 #Apply to the original DB 
-#tv['networks'] = tv_cop['_networks_']
-print(tv_cop['_networks_'].nunique())
+tv['networks'] = tv_cop['networks']
+#print(tv_cop['_networks_'].nunique())
 print('before the change')
 print(tv_cop['networks'].nunique())
 print(tv_cop.value_counts('networks').sort_values(ascending=False).head(20))
 print('_networks_')
-print(tv_cop.value_counts('_networks_').sort_values(ascending=False).head(20))
-tv['networks'] = tv_cop['_networks_']
+#print(tv_cop.value_counts('_networks_').sort_values(ascending=False).head(20))
 
+
+print(tv['networks'].nunique())
 print(tv.info())
 
 # handle spoken_languages column:
