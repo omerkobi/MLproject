@@ -73,10 +73,7 @@ def check_columns(): # check how many unique values in each column
     for col in tv.columns :
         print(f'{col} : {tv[col].nunique()} , {tv[col].dtypes}')
 
-#bins =range(tv['number_of_episodes'].min(),tv['number_of_episodes'].max()+100, 800)
-#bins2 =range(tv['number_of_seasons'].min(),tv['number_of_seasons'].max()+10, 10)
-#plt.figure(figsize=(10, 5))
-#tv_filtered = tv.loc[tv['number_of_episodes'] <= 100,: ]
+
 
 #displaying the data
 #sns.histplot(tv_filtered,x='number_of_seasons', kde = True,discrete=True)#,bins = (1,2,3,4,5))
@@ -160,6 +157,11 @@ def group_geners(genre):
 
 tv['group_genere'] = tv['genres'].apply(group_geners)
 
+########### handle overviews column ##########
+tv['overview'] = tv['overview'].astype('string')
+tv['overview'] = tv['overview'].apply(lambda x :x.lower() if pd.notna(x) else x) 
+
+
 tv_cop = tv.copy()
 
 print(check_columns())
@@ -178,11 +180,12 @@ tv['overview'] = tv['overview'].astype('string')
 
 
 #handling large category production_contries
-
+# production_countries column
 print(tv['production_countries'].head(20))
 production_con_count = tv['production_countries'].value_counts().sort_values(ascending=False)
 
-prod_count_to_other =production_con_count[production_con_count >= 400].index.tolist()
+#prod_count_to_other =production_con_count[production_con_count >= 400].index.tolist()
+prod_count_to_other = production_con_count.head(22).index.tolist()
 
 print(tv.value_counts('production_countries').sort_values(ascending=False).values.sum())
 tv_cop['production_countries'] = tv_cop['production_countries'].astype('string')
@@ -191,8 +194,14 @@ def replace_low_count_countries(value):
     if pd.isna(value):  # Handle NaN values
         return value
     countries = value.split(',')  # Split if multiple countries exist
-    updated_countries = [country if country in prod_count_to_other else 'Other' for country in countries]
-    return ', '.join(updated_countries)  # Join back into a single string
+    if any(country in prod_count_to_other for country in countries):
+        if len(countries) > 1:
+            return 'multiple top_20'
+        else:
+            return value
+    return 'Other'
+    #updated_countries = [country if country in prod_count_to_other else 'Other' for country in countries]
+    #return ', '.join(updated_countries)  # Join back into a single string
 
 # Apply the function
 tv_cop['production_countries'] = tv_cop['production_countries'].apply(replace_low_count_countries)
@@ -204,9 +213,10 @@ tv['production_countries'] = tv_cop['production_countries']
 
 # hundle networks column reduce the number of networks - convert sum to 'other'
 
-
+top_20_net = tv.value_counts('networks').sort_values(ascending=False).head(20)
 net_counts = tv.value_counts('networks').sort_values(ascending=False)
-net_counts_other = net_counts[net_counts >= 50].index.tolist()
+#net_counts_other = net_counts[net_counts >= 100].index.tolist()
+net_counts_other  = top_20_net.index.tolist()
 
 def replace_low_count_networks(value):
     if pd.isna(value):  # Handle NaN values
@@ -221,22 +231,99 @@ def replace_low_count_networks(value):
     # Otherwise, replace all with 'Other'
     return 'Other'
 
+# function to creat a replace column , I am adding a column for now because after i would like to creat a new 
+# column based on networks that specified the number of networks that participated in the production
+
+def replace_with_dominant(value):
+    if pd.isna(value):
+        return value
+    networks = value.lower().split(', ')
+    if len(networks) >1 and any(net in top_20_net.index for net in networks):
+            return 'coop top_20'
+    #for net in networks:
+     #   if net in top_20_net.index:
+            #return net
+        #continue
+    else:
+        return value.lower()
+        
+
+
 
 #print(net_counts)
 tv_cop['networks'] = tv_cop['networks'].astype('string')
 tv_cop['networks'] = tv_cop['networks'].apply(replace_low_count_networks)
+#apllying
+tv_cop['_networks_'] = tv_cop['networks'].apply(replace_with_dominant)
+#Apply to the original DB 
+#tv['networks'] = tv_cop['_networks_']
+print(tv_cop['_networks_'].nunique())
+print('before the change')
+print(tv_cop['networks'].nunique())
 print(tv_cop.value_counts('networks').sort_values(ascending=False).head(20))
-tv['networks'] = tv_cop['networks']
+print('_networks_')
+print(tv_cop.value_counts('_networks_').sort_values(ascending=False).head(20))
+tv['networks'] = tv_cop['_networks_']
 
 print(tv.info())
 
 # handle spoken_languages column:
 spoken_lang_count = tv.value_counts('spoken_languages').sort_values(ascending=False)
 #print(spoken_lang_count.head(20))
-spoken_lang_count_other = spoken_lang_count[spoken_lang_count <= 250].index.tolist()
+#spoken_lang_count_other = spoken_lang_count[spoken_lang_count >= 250].index.tolist()
+spoken_lang_count_other = spoken_lang_count.head(20).index.tolist()
+
+def replace_low_count_spoken(value):
+    if pd.isna(value):  # Handle NaN values
+        return value
+    
+    spoken = value.split(', ')  # Split into list of spoken languages
+    
+    # Check if at least one language is in net_counts_other
+    if any(spok in spoken_lang_count_other for spok in spoken):
+        if len(spoken) > 1:
+            return 'multiple top_20'
+        else:
+            return value # Keep original value if at least one language is valid
+            
+    # Otherwise, replace all with 'Other'
+    return 'Other'
+
 tv_cop['spoken_languages'] = tv_cop['spoken_languages'].astype('string')
-tv_cop['spoken_languages'] = tv_cop['spoken_languages'].apply(lambda x : 'other' if pd.notna(x) and x in spoken_lang_count_other else x)
+tv_cop['spoken_languages'] = tv_cop['spoken_languages'].apply(replace_low_count_spoken)
 print(tv_cop.value_counts('spoken_languages').sort_values(ascending=False).head(20))
+#print(tv_cop['spoken_languages'].nunique())
+# Apply to the original DB:
+
+tv['spoken_languages'] = tv_cop['spoken_languages'] 
+
+#######
+lan_count =tv.value_counts('languages').sort_values(ascending=False)
+#lan_count_other = lan_count[lan_count >= 350].index.tolist()
+lan_count_other = lan_count.head(20).index.tolist()
+
+def replace_low_count_lang(value):
+    if pd.isna(value):  # Handle NaN values
+        return value
+    
+    lang = value.split(', ')  # Split into list of spoken languages
+    
+    # Check if at least one language is in net_counts_other
+    if any(lan in lan_count_other for lan in lang):
+        if len(lang) > 1:
+            return 'multiple top_20'
+        else:
+            return value  # Keep original value if at least one language is valid
+    
+    # Otherwise, replace all with 'Other'
+    return 'Other'
+
+
+print(tv['languages'].nunique())
+tv['languages'] = tv['languages'].apply(replace_low_count_lang)
+lang_count =tv.value_counts('languages').sort_values(ascending=False)
+print(lang_count.head(20))
+print(tv['languages'].nunique())
 
 
 
