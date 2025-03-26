@@ -155,12 +155,16 @@ def group_geners(genre):
 
 
 
-tv['group_genere'] = tv['genres'].apply(group_geners)
-top_20_gen = tv.value_counts('group_genere').sort_values(ascending=False).head(20)
+tv['genere'] = tv['genres'].apply(group_geners)
+# Now i will narrow the number of generes according to top 20 most common generes
+top_20_gen = tv.value_counts('genere').sort_values(ascending=False).head(20)
 top_20_gen_other = top_20_gen.index.tolist()
+
 print(top_20_gen_other)
-top_20_gen = [gen.strip() for gen in top_20_gen_other]
+
+top_20_gen = [gen.strip() for gen in top_20_gen_other] # Remove unwanted spaces
 print(top_20_gen)
+
 def generes_to_other(value):
     if pd.isna(value):
         return value
@@ -174,12 +178,15 @@ def generes_to_other(value):
     return 'other'
 
 tv_cop = tv.copy()
-tv_cop['group_genere'] = tv_cop['group_genere'].astype('string')
-tv_cop['group_genere'] = tv_cop['group_genere'].apply(generes_to_other)
-print(tv_cop.value_counts('group_genere').sort_values(ascending=False).head(20))
-print(tv_cop['group_genere'].nunique())
+tv_cop['genere'] = tv_cop['genere'].astype('string')
+tv_cop['genere'] = tv_cop['genere'].apply(generes_to_other)
+
+print(tv_cop.value_counts('genere').sort_values(ascending=False).head(20))
+print(tv_cop['genere'].nunique())
 # Apply to the original DB:
-print(tv['group_genere'].nunique())
+tv['genres'] = tv_cop['genere']
+
+print(tv['genere'].nunique())
 
 ########### handle overviews column ##########
 tv['overview'] = tv['overview'].astype('string')
@@ -190,13 +197,13 @@ tv['overview'] = tv['overview'].apply(lambda x :x.lower() if pd.notna(x) else x)
 
 
 print(check_columns())
-geners_count = tv.value_counts('group_genere').sort_values(ascending=False)
-geners_count_other = geners_count[geners_count <= 100].index.tolist()
-tv_cop['group_genere'] = tv_cop['group_genere'].astype('string')
-tv_cop['group_genere'] = tv_cop['group_genere'].apply(lambda x : 'other' if pd.notna(x) and x in geners_count_other else x)
+#geners_count = tv.value_counts('group_genere').sort_values(ascending=False)
+#geners_count_other = geners_count[geners_count <= 100].index.tolist()
+#tv_cop['group_genere'] = tv_cop['group_genere'].astype('string')
+#tv_cop['group_genere'] = tv_cop['group_genere'].apply(lambda x : 'other' if pd.notna(x) and x in geners_count_other else x)
 #print(tv_cop.value_counts('group_genere').sort_values(ascending=False).head(20))
 
-tv['group_genere'] = tv_cop['group_genere']
+#tv['group_genere'] = tv_cop['group_genere']
 ########
 
 print(tv.value_counts('type').sort_values(ascending=False).head(20))
@@ -362,17 +369,18 @@ tv = tv.drop(columns='name')
 
 #sns.heatmap(tv.corr(numeric_only=True))
 #plt.show()
-
+# Remove all the anassign popularity values from the DB:
+print(len(tv))
+tv = tv[tv['popularity'] != 0]
+print(len(tv))
 
 tv.to_pickle('tv_show.pkl')
 
-import sys
-print(sys.executable)
-
-
-
-#tv_= pd.read_pickle('tv_show.pkl')
-
-
 #import sys
-#print(sys.version)
+#print(sys.executable)
+
+
+
+
+
+
