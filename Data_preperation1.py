@@ -6,23 +6,18 @@ import kagglehub
 import numpy as np
 
 
-#with zipfile.ZipFile(r'C:\Users\OMER\Downloads\archive.zip') as zip_:
-    #zip_.extractall()
 
 #Display all columns
 pd.set_option('display.max_columns',None)
 
 
 
-
-
-######################## Spotify ##############################
 #with zipfile.ZipFile(r'C:\Users\OMER\Downloads\TMDB_tv_dataset_v3.csv.zip') as zip_:
     #zip_.extractall()
 
 tv_db = pd.read_csv('TMDB_tv_dataset_v3.csv')
 
-#print(spotify.head())
+
 print(tv_db.info())
 
 tv_db_copy = tv_db.copy()
@@ -39,10 +34,6 @@ unrealevent_colls = ['backdrop_path','poster_path',]
 tv = tv_db_copy.drop(columns= unrealevent_colls)
 print(tv.info())
 
-tv[['name','original_name']] = tv[['name','original_name']].astype(str)
-# Adding a column if the name of the show changed and removing the original_name column
-tv['changed_name'] = tv.apply(lambda x: False if x['name']==x['original_name'] else True, axis=1)
-tv = tv.drop(columns='original_name')
 
 print(tv.info())
 
@@ -75,13 +66,7 @@ def check_columns(): # check how many unique values in each column
 
 
 
-#displaying the data
-#sns.histplot(tv_filtered,x='number_of_seasons', kde = True,discrete=True)#,bins = (1,2,3,4,5))
-#sns.distplot(tv_filtered,x='number_of_episodes', kde = True, bins=bins)#,discrete=True,)
-#sns.displot(tv_filtered['number_of_episodes'], kde = True, bins = 5)#), bins=bins)
-#sns.scatterplot(tv,x=tv['number_of_seasons'].index, y=tv['number_of_seasons'],alpha = 0.8)
-#sns.boxplot(tv,x='popularity')
-#plt.show()
+
 
 print(tv['number_of_seasons'].quantile(0.5))
 print(tv['number_of_episodes'].quantile(0.5))
@@ -96,7 +81,7 @@ print(tv.value_counts('original_language').sort_values(ascending=False).head(20)
 # setting a columns for number of languges
 ##################################################
 #before hundling large category columns and reducing tham i want to creat new columns based on the original columns 
-tv_for_features = tv.copy()
+
 lst = ['languages','spoken_languages','production_countries','networks']
 def languages(df,lst):
     for col in lst :
@@ -107,7 +92,7 @@ def languages(df,lst):
     return df
 
 #################
-
+tv_for_features = tv.copy()
 ###############################
 print('hello')
 print(tv.value_counts('production_countries').sort_values(ascending=False).head(25).values.sum())
@@ -118,8 +103,7 @@ pd.to_pickle(tv_for_features,'tv_for_features.pkl')
 
 print(tv.info())
 
-#print(tv.isna().sum())
-
+#######################################################
 # date time : convert to numericals
 tv['first_air_date'] = pd.to_datetime(tv['first_air_date'], errors='coerce')
 tv['last_air_date'] = pd.to_datetime(tv['last_air_date'], errors='coerce')
@@ -155,22 +139,26 @@ def group_geners(genre):
 
 
 
-tv['genere'] = tv['genres'].apply(group_geners)
-# Now i will narrow the number of generes according to top 20 most common generes
-top_20_gen = tv.value_counts('genere').sort_values(ascending=False).head(20)
-top_20_gen_other = top_20_gen.index.tolist()
+tv['genres'] = tv['genres'].apply(group_geners)
+# Now i will narrow the number of generes according to top 25 most common generes
+top_25_gen = tv.value_counts('genres').sort_values(ascending=False).head(25)
+top_25_gen_other = top_25_gen.index.tolist()
+print("hello")
+print(top_25_gen['Comedy&Drama'])
+#print(top_25_gen_other)
 
-print(top_20_gen_other)
-
-top_20_gen = [gen.strip() for gen in top_20_gen_other] # Remove unwanted spaces
-print(top_20_gen)
+#top_25_gen = [gen.strip() for gen in top_25_gen_other] # Remove unwanted spaces
+print(top_25_gen)
 
 def generes_to_other(value):
     if pd.isna(value):
         return value
+    if value in top_25_gen_other:
+        if top_25_gen[value] > 1500:
+            return value
     genere = value.split('&')
     genere = [gen.strip() for gen in genere]
-    if any(gen in top_20_gen_other for gen in genere):
+    if any(gen in top_25_gen_other for gen in genere):
         if len(genere) > 1:
             return 'multiple top_20'
         else:
@@ -178,15 +166,17 @@ def generes_to_other(value):
     return 'other'
 
 tv_cop = tv.copy()
-tv_cop['genere'] = tv_cop['genere'].astype('string')
-tv_cop['genere'] = tv_cop['genere'].apply(generes_to_other)
+tv_cop['genres'] = tv_cop['genres'].astype('string')
+tv_cop['genres'] = tv_cop['genres'].apply(generes_to_other)
 
-print(tv_cop.value_counts('genere').sort_values(ascending=False).head(20))
-print(tv_cop['genere'].nunique())
+print(tv_cop.value_counts('genres').sort_values(ascending=False).head(20))
+print(tv_cop['genres'].nunique())
 # Apply to the original DB:
-tv['genres'] = tv_cop['genere']
 
-print(tv['genere'].nunique())
+tv['genres'] = tv['genres'].apply(generes_to_other)
+
+print(tv.value_counts('genres').sort_values(ascending=False).head(20))
+print(tv['genres'].nunique())
 
 ########### handle overviews column ##########
 tv['overview'] = tv['overview'].astype('string')
@@ -364,7 +354,7 @@ print(tv['languages'].nunique())
 
 
 
-tv = tv.drop(columns='name')
+#tv = tv.drop(columns='name')
 
 
 #sns.heatmap(tv.corr(numeric_only=True))
@@ -374,6 +364,8 @@ print(len(tv))
 tv = tv[tv['popularity'] != 0]
 print(len(tv))
 
+
+# Export to pickle file :
 tv.to_pickle('tv_show.pkl')
 
 #import sys
