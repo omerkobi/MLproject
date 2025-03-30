@@ -21,6 +21,8 @@ tv_db = pd.read_csv('TMDB_tv_dataset_v3.csv')
 print(tv_db.info())
 
 tv_db_copy = tv_db.copy()
+null_cols = tv_db_copy.columns[tv_db_copy.isnull().mean() > 0.55].tolist()
+
 #Removing columns with more than 55% nulls
 tv_db_copy = tv_db_copy.loc[:,tv_db_copy.isnull().mean()<=0.55]
 
@@ -46,10 +48,12 @@ def group_origin_con(df,cols):
     df_copy = df.copy()
     for col in cols:
 # assigning 'other' for shows that has less than 1000 counts
-        series_count = df_copy.value_counts(col).sort_values(ascending=False)
-        series_lst = [val for val in series_count.index if series_count[val] <= 1000]
+        series_count = df_copy.value_counts(col).sort_values(ascending=False).head(20)
+        #series_lst = [val for val in series_count.index if series_count[val] <= 1000]
+        series_lst = [val for val in series_count.index ]
         df_copy[col] = df_copy[col].astype('string')
-        df_copy[col] = df_copy[col].map(lambda x : 'other' if str(x) in series_lst else str(x))
+        df_copy[col] = df_copy[col].map(lambda x: 'other' if pd.notna(x) and str(x) not in series_lst else x)
+
 #Converting to dummies after grouping values
         #df_copy[col] = df_copy[col].astype('category')
         #df_copy[col] = df_copy[col].cat.codes
@@ -102,6 +106,7 @@ print(tv_for_features.head())
 pd.to_pickle(tv_for_features,'tv_for_features.pkl')
 
 print(tv.info())
+print('this is it :  sidfujnblsikjdbnldsjfibnlksjnfdglkjndflgkjnsfldkjnldksfjgnlfkdjnglksdjnglkjnsdlgkjnlfdkjgnlskdfgn')
 
 #######################################################
 # date time : convert to numericals
@@ -351,7 +356,8 @@ tv['languages'] = tv['languages'].apply(replace_low_count_lang)
 lang_count =tv.value_counts('languages').sort_values(ascending=False)
 print(lang_count.head(20))
 print(tv['languages'].nunique())
-
+import os
+print(os.getcwd())
 
 
 #tv = tv.drop(columns='name')
@@ -364,7 +370,8 @@ print(len(tv))
 tv = tv[tv['popularity'] != 0]
 print(len(tv))
 
-
+copy =tv.copy()
+print(copy.loc[copy['number_of_seasons'] == 0,'popularity'].mean())
 # Export to pickle file :
 tv.to_pickle('tv_show.pkl')
 
