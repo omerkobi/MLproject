@@ -22,7 +22,7 @@ print(tv_db.info())
 
 tv_db_copy = tv_db.copy()
 null_cols = tv_db_copy.columns[tv_db_copy.isnull().mean() > 0.55].tolist()
-
+tv_db_copy['is_tagline'] = tv_db_copy['tagline'].apply(lambda x: 1 if pd.notna(x) else 0)
 #Removing columns with more than 55% nulls
 tv_db_copy = tv_db_copy.loc[:,tv_db_copy.isnull().mean()<=0.55]
 
@@ -361,16 +361,26 @@ print(os.getcwd())
 
 
 #tv = tv.drop(columns='name')
+copy =tv.copy()
 
+print(tv[tv['year_start']<=1950].shape[0])
+#copy = copy.loc[copy['year_start'] >= 1950,]
+copy = copy.loc[(copy['year_start'].isna()) | (copy['year_start'] >= 1970),]
+print(tv['year_start'].isna().sum())
 
+print(copy.shape[0])
+print('hello')
+print(copy[copy['year_start'] >=1950].shape[0])
 #sns.heatmap(tv.corr(numeric_only=True))
 #plt.show()
 # Remove all the anassign popularity values from the DB:
 print(len(tv))
+tv = copy
 tv = tv[tv['popularity'] != 0]
 print(len(tv))
+print(tv.loc[tv['year_start'] < 1970, ].shape[0])
 
-copy =tv.copy()
+
 print(copy.loc[copy['number_of_seasons'] == 0,'popularity'].mean())
 # Export to pickle file :
 tv.to_pickle('tv_show.pkl')
