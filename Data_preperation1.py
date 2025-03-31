@@ -365,7 +365,7 @@ copy =tv.copy()
 
 print(tv[tv['year_start']<=1950].shape[0])
 #copy = copy.loc[copy['year_start'] >= 1950,]
-copy = copy.loc[(copy['year_start'].isna()) | (copy['year_start'] >= 1970),]
+copy = copy.loc[(copy['year_start'].isna()) | (copy['year_start'] >= 1970),] # focus on tv show above 1970
 print(tv['year_start'].isna().sum())
 
 print(copy.shape[0])
